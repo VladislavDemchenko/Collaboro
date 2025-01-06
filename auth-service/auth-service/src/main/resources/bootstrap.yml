@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: auth-service
+    profiles:
+    active: dev
+#    cloud:
+#      config:
+#        uri: http://localhost:8888
+#        search-locations: /auth-service
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth/**
+
+jwt:
+  secret: "dK3yL8xR#mP9$vN2cF5jH1qW4tY7*zE6aB0nM3uQ8sW4pX2vB9yN5mC7kD1fG3hJ5nM8tP4rL6wS9xF2aE4bV7"

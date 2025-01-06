@@ -1,6 +1,8 @@
 package org.demchenko.service;
 
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.demchenko.entity.*;
 import org.demchenko.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,34 +14,28 @@ import java.util.Collections;
 import java.util.Set;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
-    private static final String ROLE_USER = "ROLE_USER";
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public boolean existsByEmail(String email) {
-        return true;
-    }
 
-    public User saveUser(User request) {
-        return userRepository.save(request);
-    }
-
-    public Mono<UserResponse> createUser(UserRequest userRequest) {
-        return userRepository.findByLogin(userRequest.login())
+    public Mono<UserResponse> createUser(UserRequest request) {
+        return userRepository.findByLogin(request.login())
                 .flatMap(existingUser -> Mono.<User>error(
-                        new UserAlreadyExistsException("Username already exists: " + userRequest.login())))
+                        new UserAlreadyExistsException("Username already exists: " + request.login())))
                 .switchIfEmpty(Mono.defer(() -> {
+
                     User newUser = new User();
-                    newUser.setLogin(userRequest.login());
-                    newUser.setPassword(passwordEncoder.encode(userRequest.password()));
+                    newUser.setLogin(request.login());
+                    newUser.setPassword(passwordEncoder.encode(request.login()));
                     newUser.setActive(true);
-                    newUser.setRoles(Collections.singletonList(ROLE_USER));
+                    newUser.setRoles(Collections.singletonList("USER"));
 
                     return userRepository.save(newUser);
-                })).doOnSuccess(user -> log.info("Created new user: {}", user.getUsername()))
+                })).doOnSuccess(user -> log.info("Created new user: {}", user.getLogin()))
                 .doOnError(error -> log.error("Error creating user: {}", error.getMessage()));
     }
 

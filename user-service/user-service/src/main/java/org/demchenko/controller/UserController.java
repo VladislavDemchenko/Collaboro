@@ -16,17 +16,11 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public Mono<ResponseEntity<UserResponse>> registerUser(@RequestBody UserRequest request) {
-        // Перевірка на унікальність email
-//        if (userService.existsByEmail(request.email())) {
-//            throw new RuntimeException("Email already exists!");
-//        }
-
-//        userService.saveUser(request);
-        return ResponseEntity.ok(userService.createUser(request));
+    public Mono<UserResponse> registerUser(@RequestBody UserRequest request) {
+        return userService.createUser(request);
     }
     @GetMapping("/getOne")
-    public Mono<ResponseEntity<UserResponse>> getUser(@RequestParam String login) {
-        return ResponseEntity.ok(userService.getUser(login));
+    public Mono<UserResponse> getUser(@RequestParam String login) {
+        return userService.getUser(login);
     }
 }

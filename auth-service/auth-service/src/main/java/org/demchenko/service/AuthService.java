@@ -24,6 +24,8 @@ public class AuthService {
 
     public Mono<UserResponse> authenticate(UserAuthenticationRequest userAuthenticationRequest) {
         return userServiceClient.getUser(userAuthenticationRequest.login())
+            .flatMap(existingUser -> Mono.<UserResponse>error(
+                    new UserAlreadyExistsException("Username already exists: " + userAuthenticationRequest.login())))
             .filter(user -> passwordEncoder
                     .matches(userAuthenticationRequest.password(), user.password()))
             .switchIfEmpty(Mono.error(new RuntimeException("Invalid credentials")));

@@ -3,9 +3,9 @@ package org.demchenko.controller;
 import lombok.RequiredArgsConstructor;
 import org.demchenko.entity.AuthResponse;
 import org.demchenko.entity.UserAuthenticationRequest;
-import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.security.JwtService;
 import org.demchenko.service.AuthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +19,10 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AuthController {
 
+    @Autowired
     private final JwtService jwtService;
 
+    @Autowired
     private final AuthService authService;
 
 //    @PostMapping("/register")
@@ -33,7 +35,7 @@ public class AuthController {
 //    }
 
     //todo: think about cast response to AuthResponse
-    @PostMapping("/users/register")
+    @PostMapping("/register")
     public Mono<ServerResponse> registerUser(ServerRequest request) {
         return authService.register(request);
     }
@@ -43,7 +45,7 @@ public class AuthController {
         return authService.authenticate(userAuthenticationRequest)
                 .map(userResponse -> AuthResponse.builder()
                 .token(jwtService.generateToken(userResponse.login()))
-                .username(userResponse.login())
+                .login(userResponse.login())
                 .build());
     }
 

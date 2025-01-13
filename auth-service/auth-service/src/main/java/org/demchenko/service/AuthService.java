@@ -7,8 +7,10 @@ import org.demchenko.entity.UserAuthenticationRequest;
 import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.entity.UserResponse;
 import org.demchenko.exception.UserAlreadyExistsException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -21,24 +23,26 @@ public class AuthService {
 
     private final UserServiceClient userServiceClient;
 
+    @Autowired
     private final BCryptPasswordEncoder passwordEncoder;
 
     public Mono<ServerResponse> register(ServerRequest request) {
         return request.bodyToMono(UserAuthorizationRequest.class)
+                .doOnNext( userAuthRequest -> userAuthRequest.setPassword(passwordEncoder.encode(userAuthRequest.getPassword())))
                 .flatMap(userServiceClient::registerUser)
-                .flatMap(userResponse -> ServerResponse.ok().bodyValue(userResponse)) // Успішна відповідь
+                .flatMap(userResponse -> ServerResponse.ok().bodyValue(userResponse.getPassword())) // success response
                 .onErrorResume(UserAlreadyExistsException.class, ex ->
-                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(ex.getMessage())) // Обробка помилки
+                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(ex.getMessage())) // exception response
                 .onErrorResume(error ->
                         ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
     }
 
     public Mono<UserResponse> authenticate(UserAuthenticationRequest userAuthenticationRequest) {
-        return userServiceClient.getUser(userAuthenticationRequest.login())
+        return userServiceClient.getUser(userAuthenticationRequest.getLogin())
                 .flatMap(existingUser -> Mono.<UserResponse>error(
-                        new UserAlreadyExistsException("Username already exists: " + userAuthenticationRequest.login())))
+                        new UserAlreadyExistsException(HttpStatus.BAD_REQUEST, "Username already exists: " + userAuthenticationRequest.getLogin())))
                 .filter(user -> passwordEncoder
-                        .matches(userAuthenticationRequest.password(), user.password()))
+                        .matches(userAuthenticationRequest.getPassword(), user.getPassword()))
                 .switchIfEmpty(Mono.error(new RuntimeException("Invalid credentials")));
 
     }

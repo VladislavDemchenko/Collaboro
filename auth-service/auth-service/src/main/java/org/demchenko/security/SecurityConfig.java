@@ -27,7 +27,7 @@ public class SecurityConfig {
 	public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
 	    return http
 	        .authorizeExchange(exchanges -> exchanges
-	            .pathMatchers(
+	            .pathMatchers( // path that does not require authentication
 						"/api/auth/login", "/api/auth/register", "/public/**"
 	            ).permitAll()
 	            .anyExchange().authenticated()
@@ -38,9 +38,5 @@ public class SecurityConfig {
 			.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
 	        .build();
 	}
-	
-//	@Bean
-//	public ErrorWebExceptionHandler errorWebExceptionHandler(ObjectMapper objectMapper) {
-//	    return new GlobalExceptionHandler(objectMapper);
-//	}
+
 }

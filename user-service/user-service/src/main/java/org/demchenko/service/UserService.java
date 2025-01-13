@@ -1,10 +1,12 @@
 package org.demchenko.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.demchenko.entity.*;
 import org.demchenko.exception.UserAlreadyExistsException;
 import org.demchenko.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,8 +19,8 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class UserService {
 
+    @Autowired
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
 
     public Mono<UserResponse> createUser(UserRequest request) {
@@ -29,7 +31,7 @@ public class UserService {
 
                     User newUser = new User();
                     newUser.setLogin(request.login());
-                    newUser.setPassword(passwordEncoder.encode(request.login()));
+                    newUser.setPassword(request.password());
                     newUser.setActive(true);
                     newUser.setRoles(Collections.singletonList("USER"));
                     return userRepository.save(newUser)
@@ -40,8 +42,9 @@ public class UserService {
     }
 
     public Mono<UserResponse> getUser(String login) {
-        User user = userRepository.findByLogin(login);
-        return new UserResponse(user.getLogin(), user.getPassword(), user.getRoles());
+        return userRepository.findByLogin(login)
+                .map(user -> new UserResponse(user.getLogin(), user.getPassword()));
+//                .switchIfEmpty(Mono.error(new UserNotFoundException(HttpStatus.NOT_FOUND, "User not found")));
     }
 
 }

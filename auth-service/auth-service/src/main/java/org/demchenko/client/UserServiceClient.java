@@ -2,20 +2,40 @@ package org.demchenko.client;
 
 import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.entity.UserResponse;
-import org.springframework.cloud.openfeign.FeignClient;
+import org.demchenko.exception.UserAlreadyExistsException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 @Component
-@FeignClient(name = "user-service")
-public interface UserServiceClient {
+public class UserServiceClient {
 
-    @PostMapping("/users/register")
-    Mono<UserResponse> registerUser(@RequestBody UserAuthorizationRequest authorization);
+    private final WebClient webClient;
 
-    @PostMapping("/users/getOne")
-    Mono<UserResponse> getUser(@RequestParam String login);
+    public UserServiceClient(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
+    }
+
+    public Mono<UserResponse> registerUser(UserAuthorizationRequest authorization) {
+        return webClient.post()
+                .uri("/users/register")
+                .bodyValue(authorization)
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                        response.bodyToMono(String.class)
+                                .flatMap(errorMessage -> Mono.error(new UserAlreadyExistsException(HttpStatus.BAD_REQUEST, errorMessage))))
+                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                        response.bodyToMono(String.class)
+                                .flatMap(errorMessage -> Mono.error(new RuntimeException("Server error: " + errorMessage))))
+                .bodyToMono(UserResponse.class);
+    }
+
+    public Mono<UserResponse> getUser(String login) {
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/users/getOne").queryParam("login", login).build())
+                .retrieve()
+                .bodyToMono(UserResponse.class);
+    }
 }

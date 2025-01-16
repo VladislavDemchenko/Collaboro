@@ -44,8 +44,8 @@ public class AuthController {
     public Mono<AuthResponse> login(@RequestBody UserAuthenticationRequest userAuthenticationRequest) {
         return authService.authenticate(userAuthenticationRequest)
                 .map(userResponse -> AuthResponse.builder()
-                .token(jwtService.generateToken(userResponse.login()))
-                .login(userResponse.login())
+                .token(jwtService.generateToken(userResponse.getLogin()))
+                .login(userResponse.getLogin())
                 .build());
     }
 

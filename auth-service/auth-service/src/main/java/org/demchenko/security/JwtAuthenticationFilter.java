@@ -31,9 +31,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 		if (path == null) {
 			return false;
 		}
-		//todo: add own paths to skip
-		return path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/webjars")
-				|| path.startsWith("/v1/api/auth");
+		return path.contains("/api/auth/register") || path.contains("/api/auth/login");
 	}
 
 	/**

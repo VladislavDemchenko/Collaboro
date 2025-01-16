@@ -32,9 +32,9 @@ public class AuthService {
                 .flatMap(userServiceClient::registerUser)
                 .flatMap(userResponse -> ServerResponse.ok().bodyValue(userResponse.getPassword())) // success response
                 .onErrorResume(UserAlreadyExistsException.class, ex ->
-                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(ex.getMessage())) // exception response
-                .onErrorResume(error ->
-                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(ex.getMessage())); // exception response
+//                .onErrorResume(error ->
+//                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
     }
 
     public Mono<UserResponse> authenticate(UserAuthenticationRequest userAuthenticationRequest) {

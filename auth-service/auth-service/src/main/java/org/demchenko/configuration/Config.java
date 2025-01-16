@@ -16,7 +16,7 @@ public class Config {
     @Bean
     public RouterFunction<ServerResponse> route(AuthService handler) {
         return RouterFunctions
-                .route(RequestPredicates.POST("/register"), handler::register);
+                .route(RequestPredicates.POST("/api/auth/register"), handler::register);
     }
 
     @Bean

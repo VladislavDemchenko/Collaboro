@@ -14,7 +14,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 public class Config {
 
     @Bean
-    public RouterFunction<ServerResponse> route(AuthService handler) {
+    public RouterFunction<ServerResponse> route(AuthService handler) { // direct where
         return RouterFunctions
                 .route(RequestPredicates.POST("/api/auth/register"), handler::register);
     }

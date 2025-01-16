@@ -23,10 +23,10 @@ public class UserServiceClient {
                 .uri("/users/register")
                 .bodyValue(authorization)
                 .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                .onStatus(HttpStatusCode::is4xxClientError, response -> //cast all 4xx exceptions to UserAlreadyExistsException
                         response.bodyToMono(String.class)
                                 .flatMap(errorMessage -> Mono.error(new UserAlreadyExistsException(HttpStatus.BAD_REQUEST, errorMessage))))
-                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                .onStatus(HttpStatusCode::is5xxServerError, response -> //cast all 5xx exceptions to RuntimeException
                         response.bodyToMono(String.class)
                                 .flatMap(errorMessage -> Mono.error(new RuntimeException("Server error: " + errorMessage))))
                 .bodyToMono(UserResponse.class);

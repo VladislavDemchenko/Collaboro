@@ -28,13 +28,11 @@ public class AuthService {
 
     public Mono<ServerResponse> register(ServerRequest request) {
         return request.bodyToMono(UserAuthorizationRequest.class)
-                .doOnNext( userAuthRequest -> userAuthRequest.setPassword(passwordEncoder.encode(userAuthRequest.getPassword())))
+                .doOnNext( userAuthRequest ->
+                        userAuthRequest.setPassword(passwordEncoder.encode(userAuthRequest.getPassword())))
                 .flatMap(userServiceClient::registerUser)
-                .flatMap(userResponse -> ServerResponse.ok().bodyValue(userResponse.getPassword())) // success response
-                .onErrorResume(UserAlreadyExistsException.class, ex ->
-                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(ex.getMessage())); // exception response
-//                .onErrorResume(error ->
-//                        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                .flatMap(userResponse ->
+                        ServerResponse.ok().bodyValue("Successfully authenticated")); // success response
     }
 
     public Mono<UserResponse> authenticate(UserAuthenticationRequest userAuthenticationRequest) {

@@ -3,9 +3,12 @@ package org.demchenko.controller;
 import lombok.RequiredArgsConstructor;
 import org.demchenko.entity.AuthResponse;
 import org.demchenko.entity.UserAuthenticationRequest;
+import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.security.JwtService;
 import org.demchenko.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,7 +39,7 @@ public class AuthController {
 
     //todo: think about cast response to AuthResponse
     @PostMapping("/register")
-    public Mono<ServerResponse> registerUser(ServerRequest request) {
+    public Mono<String> registerUser(@RequestBody Mono<UserAuthorizationRequest> request) {
         return authService.register(request);
     }
 

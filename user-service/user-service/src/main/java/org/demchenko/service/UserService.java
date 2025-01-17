@@ -3,7 +3,8 @@ package org.demchenko.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.demchenko.entity.*;
-import org.demchenko.exception.ResponseUserAlreadyExistsException;
+import org.demchenko.exception.ResponseUserEmailAlreadyExistsException;
+import org.demchenko.exception.ResponseUserLoginAlreadyExistsException;
 import org.demchenko.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,29 +22,19 @@ public class UserService {
     @Autowired
     private final UserRepository userRepository;
 
-
-
-    public Mono<UserResponse> createUser(UserRequest request) {
-        return userRepository.findByLogin(request.login())
-                .flatMap(existingUser -> Mono.<UserResponse>defer(() -> { //throwing exception if user already exists
-                    throw new ResponseUserAlreadyExistsException();
-                }))
-                .switchIfEmpty(Mono.defer(() -> {
-                    User newUser = new User();
-                    newUser.setLogin(request.login());
-                    newUser.setPassword(request.password());
-                    newUser.setActive(true);
-                    newUser.setRoles(Collections.singletonList("USER"));
-                    return userRepository.save(newUser)
-                            .map(user -> new UserResponse(user.getLogin(), user.getPassword()));
-                }))
-                .onErrorResume(ResponseUserAlreadyExistsException.class, ex -> //handle user already exists exception
-                        Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage()))
-                )
-                .doOnSuccess(user -> log.info("Created new user: {}", user.getLogin()))
-                .doOnError(error -> log.error("Error creating user: {}", error.getMessage()));
+    public Mono<String> createUser(UserRequest request) {
+        return throwUniqueLoginException(request)
+                .switchIfEmpty(Mono.defer(() ->
+                        throwUniqueEmailException(request)
+                            .switchIfEmpty(Mono.defer(() ->
+                                    createAndSaveUser(request)))))
+                .onErrorResume(ResponseUserLoginAlreadyExistsException.class, ex -> //handle user login already exists exception
+                        Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Login already exists")))
+                .onErrorResume(ResponseUserEmailAlreadyExistsException.class, ex -> //handle user email already exists exception
+                        Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists")))
+                .doOnSuccess(user -> log.info("Created new user"))
+                .doOnError(error -> log.error("Error creating user"));
     }
-
 
     public Mono<UserResponse> getUser(String login) {
         return userRepository.findByLogin(login)
@@ -51,4 +42,28 @@ public class UserService {
 //                .switchIfEmpty(Mono.error(new UserNotFoundException(HttpStatus.NOT_FOUND, "User not found")));
     }
 
+    private Mono<String> createAndSaveUser(UserRequest request) {
+        User newUser = new User();
+        newUser.setLogin(request.login());
+        newUser.setPassword(request.password());
+        newUser.setEmail(request.email());
+        newUser.setActive(true);
+        newUser.setRoles(Collections.singletonList("USER"));
+        return userRepository.save(newUser)
+                .thenReturn("User created");
+    }
+
+    private Mono<String> throwUniqueEmailException(UserRequest request) {
+        return userRepository.findByEmail(request.email()) //throwing exception if user email already exists
+                .flatMap(existingUser -> Mono.<String>defer(() -> {
+                    throw new ResponseUserEmailAlreadyExistsException();
+                }));
+    }
+
+    private Mono<String> throwUniqueLoginException(UserRequest request) {
+        return userRepository.findByLogin(request.login())
+                .flatMap(existingUser -> Mono.<String>defer(() -> { //throwing exception if user login already exists
+                    throw new ResponseUserLoginAlreadyExistsException();
+                }));
+    }
 }

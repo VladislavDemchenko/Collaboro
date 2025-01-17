@@ -2,7 +2,8 @@ package org.demchenko.client;
 
 import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.entity.UserResponse;
-import org.demchenko.exception.UserAlreadyExistsException;
+import org.demchenko.exception.UserEmailAlreadyExistsException;
+import org.demchenko.exception.UserLoginAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -18,18 +19,21 @@ public class UserServiceClient {
         this.webClient = webClientBuilder.baseUrl("http://localhost:8081").build();
     }
 
-    public Mono<UserResponse> registerUser(UserAuthorizationRequest authorization) {
+    public Mono<String> registerUser(UserAuthorizationRequest authorization) {
         return webClient.post()
                 .uri("/users/register")
                 .bodyValue(authorization)
                 .retrieve()
+                .onStatus(hs -> hs.isSameCodeAs(HttpStatus.BAD_REQUEST), response ->
+                        response.bodyToMono(String.class)
+                                .flatMap(errorMessage -> Mono.error(new UserEmailAlreadyExistsException(errorMessage))))
                 .onStatus(HttpStatusCode::is4xxClientError, response -> //cast all 4xx exceptions to UserAlreadyExistsException
                         response.bodyToMono(String.class)
-                                .flatMap(errorMessage -> Mono.error(new UserAlreadyExistsException(HttpStatus.BAD_REQUEST, errorMessage))))
+                                .flatMap(errorMessage -> Mono.error(new UserLoginAlreadyExistsException(errorMessage))))
                 .onStatus(HttpStatusCode::is5xxServerError, response -> //cast all 5xx exceptions to RuntimeException
                         response.bodyToMono(String.class)
                                 .flatMap(errorMessage -> Mono.error(new RuntimeException("Server error: " + errorMessage))))
-                .bodyToMono(UserResponse.class);
+                .bodyToMono(String.class);
     }
 
     public Mono<UserResponse> getUser(String login) {

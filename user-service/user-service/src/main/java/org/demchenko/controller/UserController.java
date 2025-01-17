@@ -16,7 +16,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public Mono<UserResponse> registerUser(@RequestBody UserRequest request) {
+    public Mono<String> registerUser(@RequestBody UserRequest request) {
         return userService.createUser(request);
     }
     @GetMapping("/getOne")

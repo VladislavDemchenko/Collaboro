@@ -21,7 +21,6 @@ public class User {
     @Indexed(unique = true)
     private String login;
 
-    @Indexed(unique = true)
     private String password;
 
     @Indexed(unique = true)
@@ -33,4 +32,11 @@ public class User {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public User(String login, String password, boolean b, List<String> user) {
+        this.login = login;
+        this.password = password;
+        this.active = b;
+        this.roles = (List<String>) user;
+    }
 }

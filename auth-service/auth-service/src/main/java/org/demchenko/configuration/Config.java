@@ -13,11 +13,11 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Configuration
 public class Config {
 
-    @Bean
-    public RouterFunction<ServerResponse> route(AuthService handler) { // direct where
-        return RouterFunctions
-                .route(RequestPredicates.POST("/api/auth/register"), handler::register);
-    }
+//    @Bean
+//    public RouterFunction<ServerResponse> route(AuthService handler) { // direct where
+//        return RouterFunctions
+//                .route(RequestPredicates.POST("/api/auth/register"), handler::register);
+//    }
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {

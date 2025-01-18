@@ -6,6 +6,7 @@ import org.demchenko.client.UserServiceClient;
 import org.demchenko.entity.UserAuthenticationRequest;
 import org.demchenko.entity.UserAuthorizationRequest;
 import org.demchenko.entity.UserResponse;
+import org.demchenko.exception.InvalidPasswordException;
 import org.demchenko.exception.UserLoginAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,13 +31,16 @@ public class AuthService {
                 .flatMap(userServiceClient::registerUser);
     }
 
-    public Mono<UserResponse> authenticate(UserAuthenticationRequest userAuthenticationRequest) {
-        return userServiceClient.getUser(userAuthenticationRequest.getLogin())
-                .flatMap(existingUser -> Mono.<UserResponse>error(
-                        new UserLoginAlreadyExistsException("Username already exists: " + userAuthenticationRequest.getLogin())))
-                .filter(user -> passwordEncoder
-                        .matches(userAuthenticationRequest.getPassword(), user.getPassword()))
-                .switchIfEmpty(Mono.error(new RuntimeException("Invalid credentials")));
-
+    public Mono<UserResponse> authenticate(Mono<UserAuthenticationRequest> userAuthenticationRequest) {
+        return userAuthenticationRequest
+                .flatMap(uAR ->{
+                    return userServiceClient.getUser(uAR)
+                            .flatMap(userResponse -> {
+                                if (!passwordEncoder.matches(uAR.getPassword(), userResponse.getPassword())) {
+                                    throw new InvalidPasswordException();
+                                }
+                                return Mono.just(userResponse);
+                            });
+                });
     }
 }

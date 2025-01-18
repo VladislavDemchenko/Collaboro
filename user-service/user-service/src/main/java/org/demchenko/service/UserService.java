@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.demchenko.entity.*;
 import org.demchenko.exception.ResponseUserEmailAlreadyExistsException;
 import org.demchenko.exception.ResponseUserLoginAlreadyExistsException;
+import org.demchenko.exception.UserNotFoundException;
 import org.demchenko.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -37,9 +38,13 @@ public class UserService {
     }
 
     public Mono<UserResponse> getUser(String login) {
-        return userRepository.findByLogin(login)
-                .map(user -> new UserResponse(user.getLogin(), user.getPassword()));
-//                .switchIfEmpty(Mono.error(new UserNotFoundException(HttpStatus.NOT_FOUND, "User not found")));
+        return getByLogin(login)
+                .map(user -> new UserResponse(user.getLogin(), user.getPassword()))
+                .switchIfEmpty(Mono.error(() ->{
+                    throw new UserNotFoundException();
+                }))
+                .onErrorResume(UserNotFoundException.class, ex -> //handle user not found exception
+                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")));
     }
 
     private Mono<String> createAndSaveUser(UserRequest request) {
@@ -52,7 +57,7 @@ public class UserService {
         return userRepository.save(newUser)
                 .thenReturn("User created");
     }
-
+    //todo: add caching
     private Mono<String> throwUniqueEmailException(UserRequest request) {
         return userRepository.findByEmail(request.email()) //throwing exception if user email already exists
                 .flatMap(existingUser -> Mono.<String>defer(() -> {
@@ -61,9 +66,13 @@ public class UserService {
     }
 
     private Mono<String> throwUniqueLoginException(UserRequest request) {
-        return userRepository.findByLogin(request.login())
+        return getByLogin(request.login())
                 .flatMap(existingUser -> Mono.<String>defer(() -> { //throwing exception if user login already exists
                     throw new ResponseUserLoginAlreadyExistsException();
                 }));
+    }
+    //todo: add caching
+    private Mono<User> getByLogin(String login) {
+        return userRepository.findByLogin(login);
     }
 }

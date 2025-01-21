@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.demchenko.entity.*;
 import org.demchenko.exception.ResponseUserEmailAlreadyExistsException;
 import org.demchenko.exception.ResponseUserLoginAlreadyExistsException;
-import org.demchenko.exception.UserNotFoundException;
+import org.demchenko.exception.ResponseUserNotFoundException;
 import org.demchenko.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,9 +41,9 @@ public class UserService {
         return getByLogin(login)
                 .map(user -> new UserResponse(user.getLogin(), user.getPassword()))
                 .switchIfEmpty(Mono.error(() ->{
-                    throw new UserNotFoundException();
+                    throw new ResponseUserNotFoundException();
                 }))
-                .onErrorResume(UserNotFoundException.class, ex -> //handle user not found exception
+                .onErrorResume(ResponseUserNotFoundException.class, ex -> //handle user not found exception
                         Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")));
     }
 
